@@ -38,7 +38,9 @@ var IDLE = 64;
 
 var ERROR_MSG = "Sorry, this JS file will only work on WScript (MS Windows) =(";
 
-// Change this if you nedd to install in other path. (must end with backslash)
+var LOG_ERROR = 1;
+
+// Change this if you need to install in other path. (must end with backslash)
 var INSTALL_PATH = "C:\\users\\public\\auto_priority_changer\\";
 /**
  * Loads a file and returns its content as a string
@@ -51,36 +53,60 @@ function include(fso, jsFile) {
     return s; 
 }
 
+function getErrorMessage(e) {
+	var msg = 'Auto Priority Changer error log:\n';
+	if(e.toString) msg += e.toString() + '\n';
+	if(e.message) msg += 'message: ' + e.message + '\n';
+	if(e.description) msg += 'desc: ' + e.description + '\n';
+	if(e.name) msg += 'name: ' + e.name + '\n';
+	if(e.number) msg += 'number: ' + e.number + '\n';
+	if(e.lineNumber) msg += 'line num: ' + e.lineNumber + '\n';
+	if(e.stack) msg += 'stack: ' + e.stack + '\n';
+	return msg;
+}
+
 /**
  * This function reads the configuration and changes the priority
  * of processes accordingly.
  */
-function loop(wmi, fso) {
+function loop(wmi, fso, shell) {
 	var config = null;
 	var query = "Select Name FROM Win32_process WHERE ";
-	eval('config=' + include(fso, INSTALL_PATH + "config.js") + ';');
-	var processList = config.list;
-	var priority = config.priority;
-	var i = 0;
-	for(; i < processList.length; i++) {
-		if(i > 0) {
-			query = query + " OR ";
-		}
-		query = query + " Name = '" + processList[i] + "' ";
+	try {
+		eval('config=' + include(fso, INSTALL_PATH + "config.js") + ';');
+	} catch(e) {
+		shell.LogEvent(LOG_ERROR, getErrorMessage(e));
+		WScript.Echo('Configuration file is corrupted.\n'
+		+ 'Will try to reload in 5 minutes.\n\n'
+		+ 'Please check syntax.');
+		return 300;
 	}
-	var processes = wmi.ExecQuery(query);
-
-	var e = new Enumerator (processes);
-	for (; !e.atEnd(); e.moveNext()) {
-		var p = e.item();
-		try {
-			var ret = p.SetPriority(priority);
-			if(ret != 0) {
-				//WScript.Echo('return ' + ret + ' for process ' + p.Name);
+	try {
+		var processList = config.list;
+		var priority = config.priority;
+		var i = 0;
+		for(; i < processList.length; i++) {
+			if(i > 0) {
+				query = query + " OR ";
 			}
-		} catch(e) {
-			// TODO: catch
+			query = query + " Name = '" + processList[i] + "' ";
 		}
+		var processes = wmi.ExecQuery(query);
+
+		var e = new Enumerator (processes);
+		for (; !e.atEnd(); e.moveNext()) {
+			var p = e.item();
+			try {
+				var ret = p.SetPriority(priority);
+				if(ret != 0 && WScript.Arguments.length > 1) {
+					WScript.Echo('Error ' + ret + ' when changing priority for process ' + p.Name);
+				}
+			} catch(e) {
+				shell.LogEvent(LOG_ERROR, getErrorMessage(e));
+			}
+		}
+	} catch(e) {
+		shell.LogEvent(LOG_ERROR, getErrorMessage(e));
 	}
 	return config.timeout;
 }
@@ -97,11 +123,12 @@ function main() {
 				INSTALL_PATH + 'main.js 1', "", "runas");
 			return;
 		}
-		// fso and wmi are cached for performance
+		// fso, shell and wmi are cached for performance
 		var fso = new ActiveXObject("Scripting.FileSystemObject"); 
 		var wmi = GetObject("winmgmts:");
+		var shell = WScript.CreateObject("Wscript.Shell");
 		while(true) {
-			var timeout = loop(wmi, fso);
+			var timeout = loop(wmi, fso, shell);
 			WScript.Sleep(timeout * 1000);
 		}
 	} else if(alert) {
