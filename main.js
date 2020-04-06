@@ -28,7 +28,9 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// Constants
+// START: ===================== Constants =====================
+
+// Priorities
 var REALTIME = 256;
 var HIGH = 128;
 var ABOVE_NORMAL = 32768;
@@ -36,14 +38,20 @@ var NORMAL = 32;
 var BELOW_NORMAL = 16384;
 var IDLE = 64;
 
+// Messages
 var ERROR_MSG = "Sorry, this JS file will only work on WScript (MS Windows) =(";
 
+// Log
 var LOG_ERROR = 1;
 
-// Change this if you need to install in other path. (must end with backslash)
-var INSTALL_PATH = "C:\\users\\public\\auto_priority_changer\\";
-
+// 'Dynamic' Constants
+var INSTALL_PATH = (function() {
+	if(!WScript) return null;
+	var sfn = WScript.ScriptFullName;
+	return sfn.substring(0, sfn.lastIndexOf(WScript.ScriptName));
+}());
 var ARGUMENTS = (function() {
+	if(!WScript) return null;
 	var i;
 	var args = [];
 	for(i = 0; i < WScript.Arguments.length; i++) {
@@ -51,6 +59,8 @@ var ARGUMENTS = (function() {
 	}
 	return args;
 }());
+
+// END:   ===================== Constants =====================
 
 /**
  * Checks if an argument was passed.
@@ -147,9 +157,9 @@ function loop(wmi, fso, shell) {
 		if(!hasArgument('no-elevate')) {
 			WScript.Sleep(5000);
 			var shell = WScript.CreateObject("Shell.Application");
-			shell.ShellExecute("C:\\windows\\system32\\wscript.exe",
-				INSTALL_PATH
-					+ 'main.js --no-elevate "'
+			shell.ShellExecute("wscript.exe",
+				'"' + INSTALL_PATH
+					+ 'main.js" --no-elevate "'
 					+ ARGUMENTS.join('" "')
 					+ '"',
 				"", "runas");
