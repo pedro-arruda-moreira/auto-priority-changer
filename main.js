@@ -30,6 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // START: ===================== Constants =====================
 
+// Runtime
+var HAS_WSCRIPT = typeof(WScript) != 'undefined';
+
 // Priorities
 var REALTIME = 256;
 var HIGH = 128;
@@ -46,12 +49,12 @@ var LOG_ERROR = 1;
 
 // 'Dynamic' Constants
 var INSTALL_PATH = (function() {
-	if(!WScript) return null;
+	if(!HAS_WSCRIPT) return null;
 	var sfn = WScript.ScriptFullName;
 	return sfn.substring(0, sfn.lastIndexOf(WScript.ScriptName));
 }());
 var ARGUMENTS = (function() {
-	if(!WScript) return null;
+	if(!HAS_WSCRIPT) return null;
 	var i;
 	var args = [];
 	for(i = 0; i < WScript.Arguments.length; i++) {
@@ -153,7 +156,7 @@ function loop(wmi, fso, shell) {
  * script entry point
  */
 (function() {	
-	if(WScript) {
+	if(HAS_WSCRIPT) {
 		if(!hasArgument('no-elevate')) {
 			WScript.Sleep(5000);
 			var shell = WScript.CreateObject("Shell.Application");
