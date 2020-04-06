@@ -42,27 +42,44 @@ var LOG_ERROR = 1;
 
 // Change this if you need to install in other path. (must end with backslash)
 var INSTALL_PATH = "C:\\users\\public\\auto_priority_changer\\";
+
+var ARGUMENTS = (function() {
+	var i;
+	var args = [];
+	for(i = 0; i < WScript.Arguments.length; i++) {
+		args.push(WScript.Arguments(i));
+	}
+	return args;
+}());
+
 /**
- * Loads a file and returns its content as a string
+ * Checks if an argument was passed.
  */
-function include(fso, jsFile) {
-    var f, s;
-    f = fso.OpenTextFile(jsFile);
-    s = f.ReadAll();
-    f.Close();
-    return s; 
+function hasArgument(arg) {
+	var i;
+	for(i = 0; i < ARGUMENTS.length; i++) {
+		if(ARGUMENTS[i] == '--' + arg) {
+			return true;
+		}
+	}
+	return false;
 }
 
-function getErrorMessage(e) {
-	var msg = 'Auto Priority Changer error log:\n';
-	if(e.toString) msg += e.toString() + '\n';
-	if(e.message) msg += 'message: ' + e.message + '\n';
-	if(e.description) msg += 'desc: ' + e.description + '\n';
-	if(e.name) msg += 'name: ' + e.name + '\n';
-	if(e.number) msg += 'number: ' + e.number + '\n';
-	if(e.lineNumber) msg += 'line num: ' + e.lineNumber + '\n';
-	if(e.stack) msg += 'stack: ' + e.stack + '\n';
-	return msg;
+/**
+ * logs an exception if it happens and log is enabled
+ */
+function log(e, shell) {
+	if(!hasArgument('no-log')) {
+		var msg = 'Auto Priority Changer error log:\n';
+		if(e.toString) msg += e.toString() + '\n';
+		if(e.message) msg += 'message: ' + e.message + '\n';
+		if(e.description) msg += 'desc: ' + e.description + '\n';
+		if(e.name) msg += 'name: ' + e.name + '\n';
+		if(e.number) msg += 'number: ' + e.number + '\n';
+		if(e.lineNumber) msg += 'line num: ' + e.lineNumber + '\n';
+		if(e.stack) msg += 'stack: ' + e.stack + '\n';
+		shell.LogEvent(LOG_ERROR, msg);
+	}
 }
 
 /**
@@ -70,15 +87,26 @@ function getErrorMessage(e) {
  * of processes accordingly.
  */
 function loop(wmi, fso, shell) {
+	/**
+	 * Loads a file and returns its content as a string
+	 */
+	function include(fso, jsFile) {
+		var f, s;
+		f = fso.OpenTextFile(jsFile);
+		s = f.ReadAll();
+		f.Close();
+		return s; 
+	}
+	
 	var config = null;
 	var query = "Select Name FROM Win32_process WHERE ";
 	try {
 		eval('config=' + include(fso, INSTALL_PATH + "config.js") + ';');
 	} catch(e) {
-		shell.LogEvent(LOG_ERROR, getErrorMessage(e));
+		log(e, shell);
 		WScript.Echo('Configuration file is corrupted.\n'
-		+ 'Will try to reload in 5 minutes.\n\n'
-		+ 'Please check syntax.');
+			+ 'Will try to reload in 5 minutes.\n\n'
+			+ 'Please check syntax.');
 		return 300;
 	}
 	try {
@@ -98,15 +126,15 @@ function loop(wmi, fso, shell) {
 			var p = e.item();
 			try {
 				var ret = p.SetPriority(priority);
-				if(ret != 0 && WScript.Arguments.length > 1) {
+				if(ret != 0 && hasArgument('do-echo')) {
 					WScript.Echo('Error ' + ret + ' when changing priority for process ' + p.Name);
 				}
 			} catch(e) {
-				shell.LogEvent(LOG_ERROR, getErrorMessage(e));
+				log(e, shell);
 			}
 		}
 	} catch(e) {
-		shell.LogEvent(LOG_ERROR, getErrorMessage(e));
+		log(e, shell);
 	}
 	return config.timeout;
 }
@@ -114,13 +142,17 @@ function loop(wmi, fso, shell) {
 /**
  * script entry point
  */
-function main() {
+(function() {	
 	if(WScript) {
-		if(WScript.Arguments.length == 0) {
+		if(!hasArgument('no-elevate')) {
 			WScript.Sleep(5000);
 			var shell = WScript.CreateObject("Shell.Application");
 			shell.ShellExecute("C:\\windows\\system32\\wscript.exe",
-				INSTALL_PATH + 'main.js 1', "", "runas");
+				INSTALL_PATH
+					+ 'main.js --no-elevate "'
+					+ ARGUMENTS.join('" "')
+					+ '"',
+				"", "runas");
 			return;
 		}
 		// fso, shell and wmi are cached for performance
@@ -136,6 +168,4 @@ function main() {
 	} else if(console && console.log) {
 		console.log(ERROR_MSG);
 	}
-}
-
-main();
+}());
