@@ -42,7 +42,7 @@ var BELOW_NORMAL = 16384;
 var IDLE = 64;
 
 // Messages
-var ERROR_MSG = "Sorry, this JS file will only work on WScript (MS Windows) =(";
+var WRONG_ENV_MSG = "Sorry, this JS file will only work on WScript (MS Windows) =(";
 
 // Log
 var LOG_ERROR = 1;
@@ -58,7 +58,12 @@ var ARGUMENTS = (function() {
 	var i;
 	var args = [];
 	for(i = 0; i < WScript.Arguments.length; i++) {
-		args.push(WScript.Arguments(i));
+		var arg = WScript.Arguments(i);
+		if(arg.indexOf(':') > -1) {
+			var spl = arg.split(':');
+			args[spl[0].replace('--', '')] = spl[1];
+		}
+		args.push(arg);
 	}
 	return args;
 }());
@@ -79,23 +84,6 @@ function hasArgument(arg) {
 }
 
 /**
- * logs an exception if it happens and log is enabled
- */
-function log(e, shell) {
-	if(!hasArgument('no-log')) {
-		var msg = 'Auto Priority Changer error log:\n';
-		if(e.toString) msg += e.toString() + '\n';
-		if(e.message) msg += 'message: ' + e.message + '\n';
-		if(e.description) msg += 'desc: ' + e.description + '\n';
-		if(e.name) msg += 'name: ' + e.name + '\n';
-		if(e.number) msg += 'number: ' + e.number + '\n';
-		if(e.lineNumber) msg += 'line num: ' + e.lineNumber + '\n';
-		if(e.stack) msg += 'stack: ' + e.stack + '\n';
-		shell.LogEvent(LOG_ERROR, msg);
-	}
-}
-
-/**
  * This function reads the configuration and changes the priority
  * of processes accordingly.
  */
@@ -103,7 +91,7 @@ function loop(wmi, fso, shell) {
 	/**
 	 * Loads a file and returns its content as a string
 	 */
-	function include(fso, jsFile) {
+	function include(jsFile) {
 		var f, s;
 		f = fso.OpenTextFile(jsFile);
 		s = f.ReadAll();
@@ -111,12 +99,36 @@ function loop(wmi, fso, shell) {
 		return s; 
 	}
 	
+	/**
+	 * logs an exception if it happens and log is enabled
+	 */
+	function log(e) {
+		if(!hasArgument('no-log')) {
+			var msg = 'Auto Priority Changer error log:\n';
+			if(e.toString) msg += e.toString() + '\n';
+			if(e.message) msg += 'message: ' + e.message + '\n';
+			if(e.description) msg += 'desc: ' + e.description + '\n';
+			if(e.name) msg += 'name: ' + e.name + '\n';
+			if(e.number) msg += 'number: ' + e.number + '\n';
+			if(e.lineNumber) msg += 'line num: ' + e.lineNumber + '\n';
+			if(e.stack) msg += 'stack: ' + e.stack + '\n';
+			shell.LogEvent(LOG_ERROR, msg);
+		}
+	}
+	
+	function getConfigFile() {
+		if(ARGUMENTS['config-file'] == null) {
+			return 'config.js';
+		}
+		return ARGUMENTS['config-file'];
+	}
+	
 	var config = null;
 	var query = "Select Name FROM Win32_process WHERE ";
 	try {
-		eval('config=' + include(fso, INSTALL_PATH + "config.js") + ';');
+		eval('config=' + include(INSTALL_PATH + getConfigFile()) + ';');
 	} catch(e) {
-		log(e, shell);
+		log(e);
 		WScript.Echo('Configuration file is corrupted.\n'
 			+ 'Will try to reload in 5 minutes.\n\n'
 			+ 'Please check syntax.');
@@ -143,11 +155,11 @@ function loop(wmi, fso, shell) {
 					WScript.Echo('Error ' + ret + ' when changing priority for process ' + p.Name);
 				}
 			} catch(e) {
-				log(e, shell);
+				log(e);
 			}
 		}
 	} catch(e) {
-		log(e, shell);
+		log(e);
 	}
 	return config.timeout;
 }
@@ -161,8 +173,8 @@ function loop(wmi, fso, shell) {
 			WScript.Sleep(5000);
 			var shell = WScript.CreateObject("Shell.Application");
 			shell.ShellExecute("wscript.exe",
-				'"' + INSTALL_PATH
-					+ 'main.js" --no-elevate "'
+				'"' + INSTALL_PATH + WScript.ScriptName
+					+ '" --no-elevate "'
 					+ ARGUMENTS.join('" "')
 					+ '"',
 				"", "runas");
@@ -177,8 +189,8 @@ function loop(wmi, fso, shell) {
 			WScript.Sleep(timeout * 1000);
 		}
 	} else if(alert) {
-		alert(ERROR_MSG);
+		alert(WRONG_ENV_MSG);
 	} else if(console && console.log) {
-		console.log(ERROR_MSG);
+		console.log(WRONG_ENV_MSG);
 	}
 }());
