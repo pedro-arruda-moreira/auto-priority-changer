@@ -52,8 +52,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	 * list of processes to change execution priority
 	 */
 	list: [
+		"taskmgr.exe",
 		"WINWORD.EXE",
 		"Excel.exe",
+		"POWERPNT.EXE",
 		"Steam.exe",
 		"explorer.exe",
 		"OneDrive.exe",
@@ -64,6 +66,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		"eclipse.exe",
 		"java.exe",
 		"javaw.exe",
-		"exefile.exe"
+		"exefile.exe",
+		"notepad++.exe",
+		"AoE2DE_s.exe"
 	]
 }
