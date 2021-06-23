@@ -148,6 +148,8 @@ function loop(wmi, shell) {
 			} catch(e) {
 				log(e);
 			}
+			// limit to 20 processes per second
+			WScript.Sleep(50);
 		}
 		echo('found ' + count + ' processes.');
 	} catch(e) {
