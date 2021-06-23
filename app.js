@@ -59,12 +59,12 @@ function loop(wmi, shell) {
 		if(!hasArgument('no-log')) {
 			var msg = 'Auto Priority Changer error log:\n';
 			if(e.toString) msg += e.toString() + '\n';
-			if(e.message) msg += 'message: ' + e.message + '\n';
-			if(e.description) msg += 'desc: ' + e.description + '\n';
-			if(e.name) msg += 'name: ' + e.name + '\n';
-			if(e.number) msg += 'number: ' + e.number + '\n';
-			if(e.lineNumber) msg += 'line num: ' + e.lineNumber + '\n';
-			if(e.stack) msg += 'stack: ' + e.stack + '\n';
+			var allFields = "-------\n";
+			var f = null;
+			for(f in e) {
+				allFields = allFields + f + '=' + e[f] + ' -\n';
+			}
+			msg += allFields;
 			shell.LogEvent(LOG_ERROR, msg);
 		}
 	}
@@ -77,16 +77,16 @@ function loop(wmi, shell) {
 	}
 	
 	function buildQuery(modeOfOperation, processList) {
-		var query = "Select Name FROM Win32_process WHERE 1=1";
+		var query = "Select Name FROM Win32_process WHERE ";
 		var i = 0;
 		for(; i < processList.length; i++) {
-			//if(i > 0) {
+			if(i > 0) {
 				if(modeOfOperation == SELECT) {
 					query = query + " OR ";
 				} else if(modeOfOperation == BOOST) {
 					query = query + " AND ";
 				}
-			//}
+			}
 			query = query + " Name ";
 			if(modeOfOperation == SELECT) {
 				query = query + " = '";
@@ -94,6 +94,13 @@ function loop(wmi, shell) {
 				query = query + " != '";
 			}
 			query = query + processList[i] + "' ";
+		}
+		return query;
+	}
+	
+	function echo(msg) {
+		if(hasArgument('do-echo')) {
+			WScript.Echo(msg);
 		}
 	}
 	
@@ -122,24 +129,26 @@ function loop(wmi, shell) {
 		var processList = config.list;
 		var priority = config.priority;
 		var query = buildQuery(config.modeOfOperation, processList);
+		echo(query);
 		var processes = wmi.ExecQuery(query);
 
 		var e = new Enumerator (processes);
+		var count = 0;
 		for (; !e.atEnd(); e.moveNext()) {
+			count++;
 			var p = e.item();
 			try {
 				var ret = p.SetPriority(priority);
 				if(ret != 0) {
 					var msg = 'Error ' + ret + ' when changing priority for process ' + p.Name;
-					if(hasArgument('do-echo')) {
-						WScript.Echo(msg);
-					}
+					echo(msg);
 					log(msg);
 				}
 			} catch(e) {
 				log(e);
 			}
 		}
+		echo('found ' + count + ' processes.');
 	} catch(e) {
 		log(e);
 	}
