@@ -117,6 +117,7 @@ function loop(wmi, shell) {
 	try {
 		var moo = config.modeOfOperation;
 		if(moo == null || moo == undefined) {
+			echo('mode of operation -> default');
 			moo = SELECT;
 		}
 		
@@ -128,7 +129,7 @@ function loop(wmi, shell) {
 		}
 		var processList = config.list;
 		var priority = config.priority;
-		var query = buildQuery(config.modeOfOperation, processList);
+		var query = buildQuery(moo, processList);
 		echo(query);
 		var processes = wmi.ExecQuery(query);
 
