@@ -30,13 +30,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // START: ===================== Constants =====================
 
-// Priorities
+// ---- Priorities ----
 var REALTIME = 256;
 var HIGH = 128;
 var ABOVE_NORMAL = 32768;
 var NORMAL = 32;
 var BELOW_NORMAL = 16384;
 var IDLE = 64;
+
+// ---- Modes of operation ----
+var BOOST = 1;
+var SELECT = 0;
 
 // Log
 var LOG_ERROR = 1;
@@ -72,8 +76,28 @@ function loop(wmi, shell) {
 		return ARGUMENTS['config-file'];
 	}
 	
+	function buildQuery(modeOfOperation, processList) {
+		var query = "Select Name FROM Win32_process WHERE 1=1";
+		var i = 0;
+		for(; i < processList.length; i++) {
+			//if(i > 0) {
+				if(modeOfOperation == SELECT) {
+					query = query + " OR ";
+				} else if(modeOfOperation == BOOST) {
+					query = query + " AND ";
+				}
+			//}
+			query = query + " Name ";
+			if(modeOfOperation == SELECT) {
+				query = query + " = '";
+			} else if(modeOfOperation == BOOST) {
+				query = query + " != '";
+			}
+			query = query + processList[i] + "' ";
+		}
+	}
+	
 	var config = null;
-	var query = "Select Name FROM Win32_process WHERE ";
 	try {
 		eval('config=' + include(INSTALL_PATH + getConfigFile()) + ';');
 	} catch(e) {
@@ -84,15 +108,20 @@ function loop(wmi, shell) {
 		return 300;
 	}
 	try {
+		var moo = config.modeOfOperation;
+		if(moo == null || moo == undefined) {
+			moo = SELECT;
+		}
+		
+		if(hasArgument('elevated') && moo == BOOST) {
+			WScript.Echo('BOOST cannot be run elevated.\n'
+				+ 'Will try to reload in 5 minutes.\n\n'
+				+ 'Change config file and try again or restart process non elevated.');
+				return 300;
+		}
 		var processList = config.list;
 		var priority = config.priority;
-		var i = 0;
-		for(; i < processList.length; i++) {
-			if(i > 0) {
-				query = query + " OR ";
-			}
-			query = query + " Name = '" + processList[i] + "' ";
-		}
+		var query = buildQuery(config.modeOfOperation, processList);
 		var processes = wmi.ExecQuery(query);
 
 		var e = new Enumerator (processes);
@@ -100,8 +129,12 @@ function loop(wmi, shell) {
 			var p = e.item();
 			try {
 				var ret = p.SetPriority(priority);
-				if(ret != 0 && hasArgument('do-echo')) {
-					WScript.Echo('Error ' + ret + ' when changing priority for process ' + p.Name);
+				if(ret != 0) {
+					var msg = 'Error ' + ret + ' when changing priority for process ' + p.Name;
+					if(hasArgument('do-echo')) {
+						WScript.Echo(msg);
+					}
+					log(msg);
 				}
 			} catch(e) {
 				log(e);
@@ -122,7 +155,7 @@ function loop(wmi, shell) {
 		var shell = WScript.CreateObject("Shell.Application");
 		shell.ShellExecute("wscript.exe",
 			'"' + INSTALL_PATH + WScript.ScriptName
-				+ '" --no-elevate "'
+				+ '" --no-elevate --elevated "'
 				+ ARGUMENTS.join('" "')
 				+ '"',
 			"", "runas");

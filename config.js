@@ -33,6 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 {
 	/**
 	 * Possible values are:
+	 * SELECT -> change priority for all processes on [list] (default)
+	 * BOOST -> change priority for all processes on the system, except those on [list] (cannot be elevated)
+	 */
+	modeOfOperation: SELECT,
+	/**
+	 * Possible values are:
 	 * REALTIME
 	 * HIGH
 	 * ABOVE_NORMAL -> recommended and default
