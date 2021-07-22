@@ -31,12 +31,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // START: ===================== Constants =====================
 
 // ---- Priorities ----
-var REALTIME = 256;
-var HIGH = 128;
-var ABOVE_NORMAL = 32768;
-var NORMAL = 32;
-var BELOW_NORMAL = 16384;
-var IDLE = 64;
+// position 0 -> priority class
+// position 1 -> WMI value
+var REALTIME = [256, 24];
+var HIGH = [128, 13];
+var ABOVE_NORMAL = [32768, 10];
+var NORMAL = [32, 8];
+var BELOW_NORMAL = [16384, 6];
+var IDLE = [64, 4];
 
 // ---- Modes of operation ----
 var BOOST = 1;
@@ -76,8 +78,8 @@ function loop(wmi, shell) {
 		return ARGUMENTS['config-file'];
 	}
 	
-	function buildQuery(modeOfOperation, processList) {
-		var query = "Select Name FROM Win32_process WHERE ";
+	function buildQuery(modeOfOperation, processList, priority) {
+		var query = "Select Name FROM Win32_process WHERE ( ";
 		var i = 0;
 		for(; i < processList.length; i++) {
 			if(i > 0) {
@@ -95,6 +97,7 @@ function loop(wmi, shell) {
 			}
 			query = query + processList[i] + "' ";
 		}
+		query += " ) AND Priority != " + priority[1];
 		return query;
 	}
 	
@@ -129,7 +132,7 @@ function loop(wmi, shell) {
 		}
 		var processList = config.list;
 		var priority = config.priority;
-		var query = buildQuery(moo, processList);
+		var query = buildQuery(moo, processList, priority);
 		echo(query);
 		var processes = wmi.ExecQuery(query);
 
@@ -139,7 +142,12 @@ function loop(wmi, shell) {
 			count++;
 			var p = e.item();
 			try {
-				var ret = p.SetPriority(priority);
+				var ret = -1;
+				if(!hasArgument('dry-run')) {
+					ret = p.SetPriority(priority[0]);
+				} else {
+					ret = 0;	
+				}
 				if(ret != 0) {
 					var msg = 'Error ' + ret + ' when changing priority for process ' + p.Name;
 					echo(msg);
@@ -148,8 +156,10 @@ function loop(wmi, shell) {
 			} catch(e) {
 				log(e);
 			}
-			// limit to 20 processes per second
-			WScript.Sleep(50);
+			if(!hasArgument('dry-run')) {
+				// limit to 20 processes per second
+				WScript.Sleep(50);
+			}
 		}
 		echo('found ' + count + ' processes.');
 	} catch(e) {
