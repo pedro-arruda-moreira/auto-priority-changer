@@ -62,6 +62,18 @@ namespace AutoPriorityChanger
             }
             return default(T);
         }
+        private static readonly Dictionary<String, Semaphore> semaphores = new Dictionary<string, Semaphore>();
+
+        public static Semaphore GetSemaphore(String name)
+        {
+            if (semaphores.ContainsKey(name))
+            {
+                return semaphores[name];
+            }
+            var newSemaphore = new Semaphore(1, 1);
+            semaphores[name] = newSemaphore;
+            return newSemaphore;
+        }
 
     }
     namespace Config
@@ -153,8 +165,12 @@ namespace AutoPriorityChanger
             }
 
 
-            private void doMakeIdle(Process initiator, string[] targets)
+            private void doMakeIdle(object configObj)
             {
+
+                Dictionary<Process, string[]> config = configObj as Dictionary<Process, string[]>;
+                Process initiator = config.First().Key;
+                string[] targets = config.First().Value;
                 var originalPriorities = new Dictionary<Process, ProcessPriorityClass>();
                 Thread.Sleep(5000);
 
@@ -173,16 +189,25 @@ namespace AutoPriorityChanger
                         }
                         catch (Exception e)
                         {
+                            originalPriorities.Remove(p);
                             debug("        -> ignoring process: " + name);
                             debug(e.StackTrace);
                         }
                     }
 
                 }
+                initiator.WaitForExit();
+                foreach (KeyValuePair<Process, ProcessPriorityClass> changed in originalPriorities)
+                {
+                    changed.Key.PriorityClass = changed.Value;
+                }
             }
 
-            private void doSuspend(Process initiator, string[] targets)
+            private void doSuspend(object configObj)
             {
+                Dictionary<Process, string[]> config = configObj as Dictionary<Process, string[]>;
+                Process initiator = config.First().Key;
+                string[] targets = config.First().Value;
                 List<IntPtr> allHandles = new List<IntPtr>();
                 Thread.Sleep(5000);
 
@@ -237,6 +262,7 @@ namespace AutoPriorityChanger
                             {
                                 p.PriorityClass = genericConfig._priorityClass;
                             }
+                            Thread.Sleep(30);
                         }
                         catch (Exception e)
                         {
@@ -250,13 +276,29 @@ namespace AutoPriorityChanger
                             {
                                 var grp = processConfig.causesgroupsuspended;
                                 var theGroup = config.processgroups[grp];
-                                doSuspend(p, theGroup);
+                                var semaphore = Utils.GetSemaphore(grp + "-suspend");
+                                if (semaphore.WaitOne(100))
+                                {
+                                    debug("        -> activate suspend with group: " + grp);
+                                    Thread suspendThread = new Thread(this.doSuspend);
+                                    var threadCfg = new Dictionary<Process, string[]>();
+                                    threadCfg.Add(p, theGroup);
+                                    suspendThread.Start(threadCfg);
+                                }
                             }
                             else if (processConfig.causesgroupidle != null)
                             {
                                 var grp = processConfig.causesgroupidle;
                                 var theGroup = config.processgroups[grp];
-                                doMakeIdle(p, theGroup);
+                                var semaphore = Utils.GetSemaphore(grp + "-idle");
+                                if (semaphore.WaitOne(100))
+                                {
+                                    debug("        -> activate idle with group: " + grp);
+                                    Thread suspendThread = new Thread(this.doMakeIdle);
+                                    var threadCfg = new Dictionary<Process, string[]>();
+                                    threadCfg.Add(p, theGroup);
+                                    suspendThread.Start(threadCfg);
+                                }
                             }
                         }
                     }

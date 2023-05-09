@@ -1,5 +1,5 @@
 {
-    "suspensionGroups": {
+    "processGroups": {
         "improve-gaming": [
             "dtagent",
             "chrome",
@@ -13,41 +13,47 @@
             "reminder",
             "onedrive",
             "brave",
-            "code"
+            "code",
+            "explorer"
         ]
     },
     "processes": {
         "GameOverlayUI": {
-            "activateSuspensionGroup": "improve-gaming"
+            "causesGroupIdle": "improve-gaming",
+            "priority": "normal"
         },
         "UbisoftGameLauncher": {
-            "activateSuspensionGroup": "improve-gaming"
+            "causesGroupIdle": "improve-gaming",
+            "priority": "normal"
         },
         "UbisoftGameLauncher64": {
-            "activateSuspensionGroup": "improve-gaming"
+            "causesGroupIdle": "improve-gaming",
+            "priority": "normal"
         },
-        "*": {}
+        "*": {
+            "priority": "above_normal"
+        }
     },
     "exceptions": [
-		"sihost",
-		"svchost",
-		"ctfmon",
-		"taskhostw",
-		"startmenuexperiencehost",
-		"runtimebroker",
-		"yourphone",
-		"textinputhost",
-		"securityhealthsystray",
-		"jusched",
-		"shellexperiencehost",
-		"applicationframehost",
-		"microsoftedge",
-		"browser_broker",
-		"winstore.app",
-		"microsoftedgesh",
-		"microsoftedgecp",
-		"calculator",
-		"smartscreen",
+        "sihost",
+        "svchost",
+        "ctfmon",
+        "taskhostw",
+        "startmenuexperiencehost",
+        "runtimebroker",
+        "yourphone",
+        "textinputhost",
+        "securityhealthsystray",
+        "jusched",
+        "shellexperiencehost",
+        "applicationframehost",
+        "microsoftedge",
+        "browser_broker",
+        "winstore.app",
+        "microsoftedgesh",
+        "microsoftedgecp",
+        "calculator",
+        "smartscreen",
         "csrss",
         "lsaiso",
         "nvdisplay.container",
@@ -59,9 +65,31 @@
         "dropboxupdate",
         "wininit",
         "bravecrashhandler64",
-        "smss"
+        "smss",
+        "system",
+        "idle",
+        "nissrv",
+        "msmpeng",
+        "searchprotocolhost",
+        "gamingservices",
+        "searchfilterhost",
+        "secure system",
+        "wslservice",
+        "gamingservicesnet",
+        "atkexcomsvc",
+        "discsoftbusservicelite",
+        "registry",
+        "lsass",
+        "dwm",
+        "uhssvc",
+        "searchindexer",
+        "dbxsvc",
+        "winlogon",
+        "logonui",
+        "sgrmbroker",
+        "wudfhost",
+        "steamservice",
+        "lmiguardiansvc"
     ],
-    "priority": "above_normal",
-    "timeout": 30,
-    "debug": 1
+    "timeout": 30
 }
