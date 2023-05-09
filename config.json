@@ -14,7 +14,10 @@
             "onedrive",
             "brave",
             "code",
-            "explorer"
+            "explorer",
+            "runtimebroker",
+            "smartscreen",
+            "steam"
         ]
     },
     "processes": {

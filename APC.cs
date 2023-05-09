@@ -144,6 +144,12 @@ namespace AutoPriorityChanger
 
     namespace Executor
     {
+        public class ExecutionContext
+        {
+            public Process initiator;
+            public string[] targets;
+            public Semaphore semaphore;
+        }
 
         public class Loop
         {
@@ -175,10 +181,9 @@ namespace AutoPriorityChanger
 
             private void doMakeIdle(object configObj)
             {
-
-                Dictionary<Process, string[]> config = configObj as Dictionary<Process, string[]>;
-                Process initiator = config.First().Key;
-                string[] targets = config.First().Value;
+                ExecutionContext config = configObj as ExecutionContext;
+                Process initiator = config.initiator;
+                string[] targets = config.targets;
                 var originalPriorities = new Dictionary<Process, ProcessPriorityClass>();
                 Thread.Sleep(5000);
                 extraExclusions = new List<string>();
@@ -190,10 +195,10 @@ namespace AutoPriorityChanger
                     if (targets.Contains(name))
                     {
                         debug("                  -> found target: " + name);
-                        originalPriorities.Add(p, p.PriorityClass);
 
                         try
                         {
+                            originalPriorities.Add(p, p.PriorityClass);
                             p.PriorityClass = ProcessPriorityClass.Idle;
                             extraExclusions.Add(name);
                         }
@@ -212,13 +217,15 @@ namespace AutoPriorityChanger
                 {
                     changed.Key.PriorityClass = changed.Value;
                 }
+
+                config.semaphore.Release();
             }
 
             private void doSuspend(object configObj)
             {
-                Dictionary<Process, string[]> config = configObj as Dictionary<Process, string[]>;
-                Process initiator = config.First().Key;
-                string[] targets = config.First().Value;
+                ExecutionContext config = configObj as ExecutionContext;
+                Process initiator = config.initiator;
+                string[] targets = config.targets;
                 List<IntPtr> allHandles = new List<IntPtr>();
                 Thread.Sleep(5000);
 
@@ -246,6 +253,7 @@ namespace AutoPriorityChanger
                     Native.Operations.NtResumeProcess(handle);
                     Native.Operations.CloseHandle(handle);
                 }
+                config.semaphore.Release();
             }
 
             public void run()
@@ -292,8 +300,12 @@ namespace AutoPriorityChanger
                                 {
                                     debug("        -> activate suspend with group: " + grp);
                                     Thread suspendThread = new Thread(this.doSuspend);
-                                    var threadCfg = new Dictionary<Process, string[]>();
-                                    threadCfg.Add(p, theGroup);
+                                    var threadCfg = new ExecutionContext()
+                                    {
+                                        initiator = p,
+                                        semaphore = semaphore,
+                                        targets = theGroup
+                                    };
                                     suspendThread.Start(threadCfg);
                                 }
                             }
@@ -305,10 +317,14 @@ namespace AutoPriorityChanger
                                 if (semaphore.WaitOne(100))
                                 {
                                     debug("        -> activate idle with group: " + grp);
-                                    Thread suspendThread = new Thread(this.doMakeIdle);
-                                    var threadCfg = new Dictionary<Process, string[]>();
-                                    threadCfg.Add(p, theGroup);
-                                    suspendThread.Start(threadCfg);
+                                    Thread idleThread = new Thread(this.doMakeIdle);
+                                    var threadCfg = new ExecutionContext()
+                                    {
+                                        initiator = p,
+                                        semaphore = semaphore,
+                                        targets = theGroup
+                                    };
+                                    idleThread.Start(threadCfg);
                                 }
                             }
                         }
