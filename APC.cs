@@ -53,9 +53,12 @@ namespace AutoPriorityChanger
     {
         public static T fromDict<T>(Dictionary<String, T> dict, string key)
         {
-            if (dict.ContainsKey(key))
+            foreach (KeyValuePair<String, T> pair in dict)
             {
-                return dict[key];
+                if (pair.Key.Equals(key))
+                {
+                    return pair.Value;
+                }
             }
             return default(T);
         }
@@ -66,19 +69,20 @@ namespace AutoPriorityChanger
 
         public class ConfigDTO
         {
-            public Dictionary<String, String[]> suspensiongroups;
+            public Dictionary<String, String[]> processgroups;
             public Dictionary<String, ProcessDTO> processes;
             public String[] exceptions;
-            public String priority;
             public Int32 timeout;
             public Int32 debug;
-            public ProcessPriorityClass priorityClass;
 
         }
 
         public class ProcessDTO
         {
-            public String activatesuspensiongroup;
+            public String causesgroupsuspended;
+            public String causesgroupidle;
+            public String priority;
+            public ProcessPriorityClass _priorityClass;
         }
 
         public class ConfigReader
@@ -95,28 +99,32 @@ namespace AutoPriorityChanger
                 var json = File.ReadAllText(configFile).ToLower();
                 var serializer = new JavaScriptSerializer();
                 ConfigDTO dto = serializer.Deserialize<ConfigDTO>(json);
-                var pr = dto.priority;
-                if (pr.Contains("above"))
+                foreach (KeyValuePair<String, ProcessDTO> pair in dto.processes)
                 {
-                    dto.priorityClass = ProcessPriorityClass.AboveNormal;
+                    var processDTO = pair.Value;
+                    var pr = processDTO.priority;
+                    if (pr.Contains("ab"))
+                    {
+                        processDTO._priorityClass = ProcessPriorityClass.AboveNormal;
+                    }
+                    else if (pr.Contains("be"))
+                    {
+                        processDTO._priorityClass = ProcessPriorityClass.BelowNormal;
+                    }
+                    else if (pr.Contains("id"))
+                    {
+                        processDTO._priorityClass = ProcessPriorityClass.Idle;
+                    }
+                    else if (pr.Contains("hi"))
+                    {
+                        processDTO._priorityClass = ProcessPriorityClass.High;
+                    }
+                    else
+                    {
+                        processDTO._priorityClass = ProcessPriorityClass.Normal;
+                    }
+                    processDTO.priority = null;
                 }
-                else if (pr.Contains("below"))
-                {
-                    dto.priorityClass = ProcessPriorityClass.BelowNormal;
-                }
-                else if (pr.Contains("idle"))
-                {
-                    dto.priorityClass = ProcessPriorityClass.Idle;
-                }
-                else if (pr.Contains("high"))
-                {
-                    dto.priorityClass = ProcessPriorityClass.High;
-                }
-                else
-                {
-                    dto.priorityClass = ProcessPriorityClass.Normal;
-                }
-                dto.priority = null;
                 return dto;
             }
         }
@@ -141,6 +149,35 @@ namespace AutoPriorityChanger
                 if (config.debug == 1)
                 {
                     Console.WriteLine(" -- DEBUG --> " + msg);
+                }
+            }
+
+
+            private void doMakeIdle(Process initiator, string[] targets)
+            {
+                var originalPriorities = new Dictionary<Process, ProcessPriorityClass>();
+                Thread.Sleep(5000);
+
+                foreach (Process p in allProcesses)
+                {
+                    var name = p.ProcessName.ToLower();
+                    debug("                  -> search target: " + name);
+                    if (targets.Contains(name))
+                    {
+                        debug("                  -> found target: " + name);
+                        originalPriorities.Add(p, p.PriorityClass);
+
+                        try
+                        {
+                            p.PriorityClass = ProcessPriorityClass.Idle;
+                        }
+                        catch (Exception e)
+                        {
+                            debug("        -> ignoring process: " + name);
+                            debug(e.StackTrace);
+                        }
+                    }
+
                 }
             }
 
@@ -190,18 +227,37 @@ namespace AutoPriorityChanger
                     ) && !isException)
                     {
                         debug("        -> found!");
-                        try {
-                            p.PriorityClass = config.priorityClass;
-                        } catch(Exception e) {
+                        try
+                        {
+                            if (processConfig != null)
+                            {
+                                p.PriorityClass = processConfig._priorityClass;
+                            }
+                            else
+                            {
+                                p.PriorityClass = genericConfig._priorityClass;
+                            }
+                        }
+                        catch (Exception e)
+                        {
                             debug("        -> ignoring process: " + name);
                             debug(e.StackTrace);
                         }
                         debug("        -> priority change");
-                        if (processConfig != null && processConfig.activatesuspensiongroup != null)
+                        if (processConfig != null)
                         {
-                            var suspGrp = processConfig.activatesuspensiongroup;
-                            var theGroup = config.suspensiongroups[suspGrp];
-                            doSuspend(p, theGroup);
+                            if (processConfig.causesgroupsuspended != null)
+                            {
+                                var grp = processConfig.causesgroupsuspended;
+                                var theGroup = config.processgroups[grp];
+                                doSuspend(p, theGroup);
+                            }
+                            else if (processConfig.causesgroupidle != null)
+                            {
+                                var grp = processConfig.causesgroupidle;
+                                var theGroup = config.processgroups[grp];
+                                doMakeIdle(p, theGroup);
+                            }
                         }
                     }
                 }
