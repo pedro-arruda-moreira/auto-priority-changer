@@ -60,18 +60,6 @@ namespace AutoPriorityChanger
             return default(T);
         }
 
-        private static readonly Dictionary<String, Semaphore> semaphores = new Dictionary<string, Semaphore>();
-
-        public static Semaphore GetSemaphore(String name)
-        {
-            if (semaphores.ContainsKey(name))
-            {
-                return semaphores[name];
-            }
-            var newSemaphore = new Semaphore(1, 1);
-            semaphores[name] = newSemaphore;
-            return newSemaphore;
-        }
     }
     namespace Config
     {
@@ -156,21 +144,10 @@ namespace AutoPriorityChanger
                 }
             }
 
-            private void debugDelay(int time)
+            private void doSuspend(Process initiator, string[] targets)
             {
-                if (config.debug == 1)
-                {
-                    Thread.Sleep(time);
-                }
-            }
-
-            private void doSuspend(object configObj)
-            {
-                Dictionary<Process, string[]> config = configObj as Dictionary<Process, string[]>;
-                Process initiator = config.First().Key;
-                string[] targets = config.First().Value;
                 List<IntPtr> allHandles = new List<IntPtr>();
-                debugDelay(5000);
+                Thread.Sleep(5000);
 
                 foreach (Process p in allProcesses)
                 {
@@ -223,20 +200,8 @@ namespace AutoPriorityChanger
                         if (processConfig != null && processConfig.activatesuspensiongroup != null)
                         {
                             var suspGrp = processConfig.activatesuspensiongroup;
-                            var semaphore = Utils.GetSemaphore(suspGrp);
-                            if (semaphore.WaitOne(100))
-                            {
-                                debug("        -> activate suspend with group: " + suspGrp);
-                                Thread suspendThread = new Thread(this.doSuspend);
-                                var threadCfg = new Dictionary<Process, string[]>();
-                                var theGroup = config.suspensiongroups[suspGrp];
-                                threadCfg.Add(p, theGroup);
-                                suspendThread.Start(threadCfg);
-                            }
-                            else
-                            {
-                                debug("        -> semaphore timed out for group: " + suspGrp);
-                            }
+                            var theGroup = config.suspensiongroups[suspGrp];
+                            doSuspend(p, theGroup);
                         }
                     }
                 }
