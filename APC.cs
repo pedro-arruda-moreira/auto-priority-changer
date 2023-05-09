@@ -83,7 +83,7 @@ namespace AutoPriorityChanger
         {
             public Dictionary<String, String[]> processgroups;
             public Dictionary<String, ProcessDTO> processes;
-            public String[] exceptions;
+            public List<String> exclusions;
             public Int32 timeout;
             public Int32 debug;
 
@@ -147,12 +147,20 @@ namespace AutoPriorityChanger
 
         public class Loop
         {
+            private static volatile List<String> extraExclusions;
             private readonly Config.ConfigDTO config;
             private readonly Process[] allProcesses;
 
             public Loop(Config.ConfigDTO config)
             {
                 this.config = config;
+                if (extraExclusions != null)
+                {
+                    foreach (string exc in extraExclusions)
+                    {
+                        config.exclusions.Add(exc);
+                    }
+                }
                 allProcesses = Process.GetProcesses();
             }
 
@@ -173,6 +181,7 @@ namespace AutoPriorityChanger
                 string[] targets = config.First().Value;
                 var originalPriorities = new Dictionary<Process, ProcessPriorityClass>();
                 Thread.Sleep(5000);
+                extraExclusions = new List<string>();
 
                 foreach (Process p in allProcesses)
                 {
@@ -186,6 +195,7 @@ namespace AutoPriorityChanger
                         try
                         {
                             p.PriorityClass = ProcessPriorityClass.Idle;
+                            extraExclusions.Add(name);
                         }
                         catch (Exception e)
                         {
@@ -197,6 +207,7 @@ namespace AutoPriorityChanger
 
                 }
                 initiator.WaitForExit();
+                extraExclusions = null;
                 foreach (KeyValuePair<Process, ProcessPriorityClass> changed in originalPriorities)
                 {
                     changed.Key.PriorityClass = changed.Value;
@@ -245,7 +256,7 @@ namespace AutoPriorityChanger
                     debug("Process: " + name);
                     var processConfig = Utils.fromDict(config.processes, name);
                     var genericConfig = Utils.fromDict(config.processes, "*");
-                    var isException = config.exceptions.Contains(name);
+                    var isException = config.exclusions.Contains(name);
                     if ((
                         processConfig != null ||
                         genericConfig != null

@@ -34,7 +34,7 @@
             "priority": "above_normal"
         }
     },
-    "exceptions": [
+    "exclusions": [
         "sihost",
         "svchost",
         "ctfmon",
