@@ -1,0 +1,67 @@
+{
+    "suspensionGroups": {
+        "improve-gaming": [
+            "dtagent",
+            "chrome",
+            "dropbox",
+            "dropboxupdate",
+            "epicWebHelper",
+            "steamWebHelper",
+            "uplaywebcore",
+            "jucheck",
+            "jusched",
+            "reminder",
+            "onedrive",
+            "brave",
+            "code"
+        ]
+    },
+    "processes": {
+        "GameOverlayUI": {
+            "activateSuspensionGroup": "improve-gaming"
+        },
+        "UbisoftGameLauncher": {
+            "activateSuspensionGroup": "improve-gaming"
+        },
+        "UbisoftGameLauncher64": {
+            "activateSuspensionGroup": "improve-gaming"
+        },
+        "*": {}
+    },
+    "exceptions": [
+		"sihost",
+		"svchost",
+		"ctfmon",
+		"taskhostw",
+		"startmenuexperiencehost",
+		"runtimebroker",
+		"yourphone",
+		"textinputhost",
+		"securityhealthsystray",
+		"jusched",
+		"shellexperiencehost",
+		"applicationframehost",
+		"microsoftedge",
+		"browser_broker",
+		"winstore.app",
+		"microsoftedgesh",
+		"microsoftedgecp",
+		"calculator",
+		"smartscreen",
+        "csrss",
+        "lsaiso",
+        "nvdisplay.container",
+        "fontdrvhost",
+        "services",
+        "nvcontainer",
+        "spoolsv",
+        "securityhealthservice",
+        "dropboxupdate",
+        "wininit",
+        "bravecrashhandler64",
+        "smss"
+    ],
+    "priority": "above_normal",
+    "timeout": 30,
+    "debug": 1
+}
