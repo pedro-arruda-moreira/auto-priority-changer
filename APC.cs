@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2020, pedro-arruda-moreira
+Copyright (c) 2023, pedro-arruda-moreira
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
