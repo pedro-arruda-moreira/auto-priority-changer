@@ -21,6 +21,13 @@
         ]
     },
     "processes": {
+        "csgo": {
+            "priority": "high"
+        },
+        "FortniteClient-Win64-Shipping": {
+            "causesGroupIdle": "improve-gaming",
+            "priority": "high"
+        },
         "GameOverlayUI": {
             "causesGroupIdle": "improve-gaming",
             "priority": "normal"
@@ -32,6 +39,9 @@
         "UbisoftGameLauncher64": {
             "causesGroupIdle": "improve-gaming",
             "priority": "normal"
+        },
+        "ACOdyssey": {
+            "priority": "high"
         },
         "*": {
             "priority": "above_normal"

@@ -245,7 +245,15 @@ namespace AutoPriorityChanger
                 extraExclusions = null;
                 foreach (KeyValuePair<Process, ProcessPriorityClass> changed in originalPriorities)
                 {
-                    changed.Key.PriorityClass = changed.Value;
+                    try
+                    {
+                        changed.Key.PriorityClass = changed.Value;
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("ignoring process " + changed.Key.ProcessName);
+                        debug(e.StackTrace);
+                    }
                 }
 
                 config.semaphore.Release();
