@@ -1,13 +1,10 @@
 {
     "processGroups": {
-        "improve-gaming": [
+        "default-idle": [
             "dtagent",
             "chrome",
             "dropbox",
             "dropboxupdate",
-            "epicWebHelper",
-            "steamWebHelper",
-            "uplaywebcore",
             "jucheck",
             "jusched",
             "reminder",
@@ -17,7 +14,18 @@
             "explorer",
             "runtimebroker",
             "smartscreen",
-            "steam"
+            "steam",
+            "cryptomator"
+        ],
+        "default-suspend": [
+            "RadeonSoftware",
+            "ms-edge",
+            "msedge",
+            "msedgewebview2",
+            "whatsapp.root",
+            "steamWebHelper",
+            "uplaywebcore",
+            "epicWebHelper"
         ]
     },
     "processes": {
@@ -25,26 +33,27 @@
             "priority": "high"
         },
         "FortniteClient-Win64-Shipping": {
-            "causesGroupIdle": "improve-gaming",
+            "causesGroupIdle": "default-idle",
+            "causesgroupsuspended": "default-suspend",
             "priority": "high"
         },
         "GameOverlayUI": {
-            "causesGroupIdle": "improve-gaming",
+            "causesGroupIdle": "default-idle",
+            "causesgroupsuspended": "default-suspend",
             "priority": "normal"
         },
         "UbisoftGameLauncher": {
-            "causesGroupIdle": "improve-gaming",
+            "causesGroupIdle": "default-idle",
+            "causesgroupsuspended": "default-suspend",
             "priority": "normal"
         },
         "UbisoftGameLauncher64": {
-            "causesGroupIdle": "improve-gaming",
+            "causesGroupIdle": "default-idle",
+            "causesgroupsuspended": "default-suspend",
             "priority": "normal"
         },
-        "ACOdyssey": {
+        "ACOdyssey_plus": {
             "priority": "high"
-        },
-        "*": {
-            "priority": "above_normal"
         }
     },
     "exclusions": [
@@ -104,5 +113,6 @@
         "steamservice",
         "lmiguardiansvc"
     ],
-    "timeout": 30
+    "timeout": 45,
+    "debug": 0
 }

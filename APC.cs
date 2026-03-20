@@ -37,6 +37,7 @@ using System.Threading;
 using System.IO;
 using System.Web.Script.Serialization;
 using System.ComponentModel;
+using AutoPriorityChanger.Native;
 
 namespace AutoPriorityChanger
 {
@@ -202,9 +203,17 @@ namespace AutoPriorityChanger
 
             private void debug(String msg)
             {
-                if (config.debug == 1)
+                if (config.debug >= 1)
                 {
                     Console.WriteLine(" -- DEBUG --> " + msg);
+                }
+            }
+
+            private void trace(String msg)
+            {
+                if (config.debug >= 2)
+                {
+                    Console.WriteLine(" -- TRACE --> " + msg);
                 }
             }
 
@@ -221,7 +230,7 @@ namespace AutoPriorityChanger
                 foreach (Process p in allProcesses)
                 {
                     var name = p.ProcessName.ToLower();
-                    debug("                  -> search target: " + name);
+                    trace("                  -> search target: " + name);
                     if (targets.Contains(name))
                     {
                         debug("                  -> found target: " + name);
@@ -242,6 +251,7 @@ namespace AutoPriorityChanger
 
                 }
                 initiator.WaitForExit();
+                debug("                  -> exited");
                 extraExclusions = null;
                 foreach (KeyValuePair<Process, ProcessPriorityClass> changed in originalPriorities)
                 {
@@ -270,7 +280,7 @@ namespace AutoPriorityChanger
                 foreach (Process p in allProcesses)
                 {
                     var name = p.ProcessName.ToLower();
-                    debug("                  -> search target: " + name);
+                    trace("                  -> search target: " + name);
                     if (targets.Contains(name))
                     {
                         debug("                  -> found target: " + name);
@@ -299,26 +309,15 @@ namespace AutoPriorityChanger
                 foreach (Process p in allProcesses)
                 {
                     var name = p.ProcessName.ToLower();
-                    debug("Process: " + name);
+                    trace("Process: " + name);
                     var processConfig = Utils.fromDict(config.processes, name);
-                    var genericConfig = Utils.fromDict(config.processes, "*");
                     var isException = config.exclusions.Contains(name);
-                    if ((
-                        processConfig != null ||
-                        genericConfig != null
-                    ) && !isException)
+                    if (processConfig != null && !isException)
                     {
                         debug("        -> found!");
                         try
                         {
-                            if (processConfig != null)
-                            {
-                                p.PriorityClass = processConfig._priorityClass;
-                            }
-                            else
-                            {
-                                p.PriorityClass = genericConfig._priorityClass;
-                            }
+                            p.PriorityClass = processConfig._priorityClass;
                             Thread.Sleep(30);
                         }
                         catch (Exception e)
@@ -327,6 +326,7 @@ namespace AutoPriorityChanger
                             debug(e.StackTrace);
                         }
                         debug("        -> priority change");
+                        var theSemaphores = new List<Semaphore>();
                         if (processConfig != null)
                         {
                             if (processConfig.causesgroupsuspended != null)
@@ -336,6 +336,7 @@ namespace AutoPriorityChanger
                                 var semaphore = Utils.GetSemaphore(grp + "-suspend");
                                 if (semaphore.WaitOne(100))
                                 {
+                                    theSemaphores.Add(semaphore);
                                     debug("        -> activate suspend with group: " + grp);
                                     Thread suspendThread = new Thread(this.doSuspend);
                                     var threadCfg = new ExecutionContext()
@@ -347,13 +348,14 @@ namespace AutoPriorityChanger
                                     suspendThread.Start(threadCfg);
                                 }
                             }
-                            else if (processConfig.causesgroupidle != null)
+                            if (processConfig.causesgroupidle != null)
                             {
                                 var grp = processConfig.causesgroupidle;
                                 var theGroup = config.processgroups[grp];
                                 var semaphore = Utils.GetSemaphore(grp + "-idle");
                                 if (semaphore.WaitOne(100))
                                 {
+                                    theSemaphores.Add(semaphore);
                                     debug("        -> activate idle with group: " + grp);
                                     Thread idleThread = new Thread(this.doMakeIdle);
                                     var threadCfg = new ExecutionContext()
@@ -366,8 +368,20 @@ namespace AutoPriorityChanger
                                 }
                             }
                         }
+                        foreach(Semaphore s in theSemaphores) {
+                            s.WaitOne();
+                            s.Release();
+                        }
                     }
                 }
+                debug("closing processes...");
+                foreach(Process p in allProcesses) {
+                    var id = p.Id;
+                    trace("closing " + id);
+                    p.Close();
+                    trace("closed " + id);
+                }
+                debug("closed processes!");
             }
         }
     }
