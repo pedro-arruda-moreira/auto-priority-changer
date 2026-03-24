@@ -1,3 +1,5 @@
 /main.js
 *.exe
 *.log
+bin/
+obj/
