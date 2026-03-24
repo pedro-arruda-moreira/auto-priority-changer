@@ -74,8 +74,8 @@ namespace AutoPriorityChanger
             try
             {
                 handle = Operations.OpenProcess(ProcessAccessFlags.PROCESS_SUSPEND_RESUME, false, p.Id);
-                trace("                    -> target handle: " + handle);
-                if (handle != IntPtr.Zero && handle.ToInt64() != 0L)
+                trace("                    -> target handle: " + handle.ToInt64());
+                if (handle != IntPtr.Zero)
                 {
                     Operations.NtSuspendProcess(handle);
                 }
@@ -86,7 +86,7 @@ namespace AutoPriorityChanger
             }
             finally
             {
-                if (handle != IntPtr.Zero && handle.ToInt64() != 0L)
+                if (handle != IntPtr.Zero)
                 {
                     Operations.CloseHandle(handle);
                 }
@@ -99,9 +99,9 @@ namespace AutoPriorityChanger
             try
             {
                 handle = Operations.OpenProcess(ProcessAccessFlags.PROCESS_SUSPEND_RESUME, false, p.Id);
-                trace("                    -> target handle: " + handle);
+                trace("                    -> target handle: " + handle.ToInt64());
 
-                if (handle != IntPtr.Zero && handle.ToInt64() != 0L)
+                if (handle != IntPtr.Zero)
                 {
                     Operations.NtResumeProcess(handle);
                 }
@@ -112,7 +112,7 @@ namespace AutoPriorityChanger
             }
             finally
             {
-                if (handle != IntPtr.Zero && handle.ToInt64() != 0L)
+                if (handle != IntPtr.Zero)
                 {
                     Operations.CloseHandle(handle);
                 }

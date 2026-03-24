@@ -71,7 +71,7 @@ namespace AutoPriorityChanger.Executor
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("ignoring process " + changed.Key.ProcessName);
+                    utils.debug("ignoring process " + changed.Key.ProcessName);
                     utils.debug(e.StackTrace);
                 }
             }
@@ -93,6 +93,7 @@ namespace AutoPriorityChanger.Executor
                 utils.trace("                  -> search target: " + name);
                 if (targets.Contains(name))
                 {
+                    allHandles.Add(p);
                     utils.SuspendProcess(p);
                 }
             }

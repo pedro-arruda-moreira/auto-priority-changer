@@ -39,6 +39,19 @@ namespace AutoPriorityChanger
     {
         public static void Main(string[] args)
         {
+            try
+            {
+                DoRun();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("ERROR: " + e.Message + " / " + e.StackTrace);
+            }
+        }
+
+        private static void DoRun()
+        {
+
             while (true)
             {
                 var timeout = 1;
