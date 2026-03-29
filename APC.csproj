@@ -28,7 +28,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AutoPriorityChanger\Native\Operations.cs" />
-    <Compile Include="AutoPriorityChanger\Native\ProcessAccessFlags.cs" />
     <Compile Include="AutoPriorityChanger\APC.cs" />
     <Compile Include="AutoPriorityChanger\Utils.cs" />
     <Compile Include="AutoPriorityChanger\Config\ConfigDTO.cs" />

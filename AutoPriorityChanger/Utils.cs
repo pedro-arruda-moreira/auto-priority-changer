@@ -9,6 +9,7 @@ namespace AutoPriorityChanger
 {
     public class Utils
     {
+        public static readonly uint PROCESS_SUSPEND_RESUME = 0x0800;
         private static readonly Dictionary<String, Semaphore> semaphores = new Dictionary<string, Semaphore>();
 
         private readonly int logDepth = 0;
@@ -73,7 +74,7 @@ namespace AutoPriorityChanger
             IntPtr handle = IntPtr.Zero;
             try
             {
-                handle = Operations.OpenProcess(ProcessAccessFlags.PROCESS_SUSPEND_RESUME, false, p.Id);
+                handle = Operations.OpenProcess(PROCESS_SUSPEND_RESUME, false, p.Id);
                 trace("                    -> target handle: " + handle.ToInt64());
                 if (handle != IntPtr.Zero)
                 {
@@ -98,7 +99,7 @@ namespace AutoPriorityChanger
             IntPtr handle = IntPtr.Zero;
             try
             {
-                handle = Operations.OpenProcess(ProcessAccessFlags.PROCESS_SUSPEND_RESUME, false, p.Id);
+                handle = Operations.OpenProcess(PROCESS_SUSPEND_RESUME, false, p.Id);
                 trace("                    -> target handle: " + handle.ToInt64());
 
                 if (handle != IntPtr.Zero)

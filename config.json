@@ -25,7 +25,8 @@
             "whatsapp.root",
             "steamWebHelper",
             "uplaywebcore",
-            "epicWebHelper"
+            "epicWebHelper",
+            "EACefSubProcess"
         ]
     },
     "processes": {
