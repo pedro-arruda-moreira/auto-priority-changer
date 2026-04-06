@@ -34,7 +34,7 @@ namespace AutoPriorityChanger.Executor
             Process initiator = config.initiator;
             string[] targets = config.targets;
             var originalPriorities = new Dictionary<Process, ProcessPriorityClass>();
-            Thread.Sleep(5000);
+            Thread.Sleep(20000);
             extraExclusions = new List<string>();
 
             foreach (Process p in allProcesses)
@@ -85,7 +85,7 @@ namespace AutoPriorityChanger.Executor
             Process initiator = config.initiator;
             string[] targets = config.targets;
             List<Process> allHandles = new List<Process>();
-            Thread.Sleep(5000);
+            Thread.Sleep(20000);
 
             foreach (Process p in allProcesses)
             {
